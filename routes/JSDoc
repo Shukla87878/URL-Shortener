@@ -1,0 +1,9 @@
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     description: Login a user
+ *     responses:
+ *       200:
+ *         description: Successfully logged in
+ */

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Custom URL Shortener</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container {
+      background-color: #ffffff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 600px;
+      text-align: center;
+    }
+    .container h1 {
+      font-size: 2rem;
+      color: #333333;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .button {
+      padding: 12px 20px;
+      background-color: #007bff;
+      color: #ffffff;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin-top: 10px;
+    }
+    .button:hover {
+      background-color: #0056b3;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 1rem;
+      color: #333333;
+    }
+    .result a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .result a:hover {
+      text-decoration: underline;
+    }
+    .url-list {
+      margin-top: 30px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 15px;
+      max-height: 300px; /* Adjust height as needed */
+      overflow-y: auto;
+      background-color: #fafafa;
+    }
+    .url-list h2 {
+      font-size: 1.5rem;
+      color: #333333;
+      margin-bottom: 10px;
+    }
+    .url-list table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .url-list th,
+    .url-list td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    .url-list th {
+      background-color: #007bff;
+      color: #ffffff;
+    }
+    .url-list tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    @media (max-width: 768px) {
+      .container {
+        width: 100%;
+        padding: 20px;
+      }
+      .url-list table {
+        font-size: 0.8rem;
+      }
+    }
+    footer{
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #333333;
+      color: #ddd;
+      padding: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>URL Shortener</h1>
+    <div class="input-group">
+      <input type="text" id="originalUrl" placeholder="Enter your URL here" />
+      <input type="text" id="customAlias" placeholder="Enter custom alias (optional)" />
+      <button class="button" id="shortenBtn">Shorten</button>
+    </div>
+    <div class="result" id="result"></div>
+    <div class="url-list" id="urlList">
+      <h2>All Shortened URLs</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Original URL</th>
+            <th>Shortened URL</th>
+            <th>Clicks</th>
+          </tr>
+        </thead>
+        <tbody id="urlTableBody"></tbody>
+      </table>
+      <footer>
+        Made by Shukla, nitishshukla260@gmail.com
+      </footer>
+    </div>
+  </div>
+  <script>
+    const fetchUrls = async () => {
+      try {
+        const response = await fetch('/api/urls');
+        if (!response.ok) {
+          throw new Error('Failed to fetch URLs');
+        }
+        const urls = await response.json();
+
+        const tableBody = document.getElementById('urlTableBody');
+        tableBody.innerHTML = '';
+        urls.forEach((url) => {
+          const row = `
+            <tr>
+              <td><a href="${url.originalUrl}" target="_blank">${url.originalUrl}</a></td>
+              <td><a href="${window.location.origin}/${url.shortUrl}" target="_blank">${window.location.origin}/${url.shortUrl}</a></td>
+              <td>${url.clicks}</td>
+            </tr>
+          `;
+          tableBody.innerHTML += row;
+        });
+      } catch (error) {
+        console.error(error);
+        alert('Failed to load URL list');
+      }
+    };
+
+    document.getElementById('shortenBtn').addEventListener('click', async () => {
+      const originalUrl = document.getElementById('originalUrl').value;
+      const customAlias = document.getElementById('customAlias').value;
+
+      if (!originalUrl) {
+        alert('Please enter a valid URL!');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/shorten', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ originalUrl, customAlias }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'An unknown error occurred');
+        }
+
+        const data = await response.json();
+        document.getElementById('result').innerHTML = `
+          <p>Shortened URL: <a href="${window.location.origin}/${data.shortUrl}" target="_blank">${window.location.origin}/${data.shortUrl}</a></p>
+        `;
+
+        fetchUrls();
+      } catch (error) {
+        console.error(error);
+        alert(`An error occurred: ${error.message}`);
+      }
+    });
+
+    window.onload = fetchUrls;
+  </script>
+</body>
+</html>
